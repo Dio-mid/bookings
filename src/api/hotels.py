@@ -1,5 +1,6 @@
 from fastapi import Query, APIRouter, Body
-from schemes.hotels import Hotel, HotelPatch
+from src.schemes.hotels import Hotel, HotelPatch
+from src.api.dependencies import PaginationDep
 
 router = APIRouter(prefix="/hotels", tags=["Отели"])
 
@@ -16,10 +17,9 @@ hotels = [
 
 @router.get("")
 def get_hotels(
+        pagination: PaginationDep,
         id: int | None = Query(None, description="Айдишник"),
-        title: str | None = Query(None, description="Название отеля"),
-        page: int | None = Query(1, description="Номер страницы"),
-        per_page: int | None = Query(3, description="Количество элементов на странице")
+        title: str | None = Query(None, description="Название отеля")
 ):
     hotels_ = []
     for hotel in hotels:
@@ -29,14 +29,15 @@ def get_hotels(
             continue
         hotels_.append(hotel)
 
-    start_index = (page - 1) * per_page
-    end_index = start_index + per_page
+    start_index = (pagination.page - 1) * pagination.per_page
+    end_index = start_index + pagination.per_page
     paginated_hotels = hotels_[start_index:end_index]
     return paginated_hotels
+    # return hotels_[per_page * (page-1):][:per_page]
 
 
 @router.post("")
-def create_hotel(hotel_data: Hotel = Body(openapi_examples={
+def create_hotel(hotel_data: Hotel = Body(openapi_examples={ #Body(embed=True) для передачи именно JSON и для только одного параметра
     "1":{
         "summary": "Сочи",
         "value": {
@@ -52,21 +53,21 @@ def create_hotel(hotel_data: Hotel = Body(openapi_examples={
         }
     }
 })
-): #Body(embed=True) для передачи именно JSON и для только одного параметра
+):
     global hotels
     hotels.append({
         "id": hotels[-1]["id"] + 1,
         "title": hotel_data.title,
         "name": hotel_data.name,
     })
-    return {"status": "OK"} # нужно возвращать JSON формат, а не строку
+    return {"status": "OK"} # Принято в RestAPI возвращать JSON формат, а не строку
 
 
 @router.delete("/{hotel_id}")
 def delete_hotel(hotel_id: int):
     global hotels
     hotels = [hotel for hotel in hotels if hotel["id"] != hotel_id]
-    return {"status": "OK"} # нужно возвращать JSON формат, а не строку
+    return {"status": "OK"} # Принято в RestAPI возвращать JSON формат, а не строку
 
 
 @router.put("/{hotel_id}")
