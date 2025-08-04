@@ -12,6 +12,8 @@ from sqlalchemy import String
 # alembic revision --autogenerate -m "initial migration" создает миграцию
 # чтобы накатить миграции alembic upgrade head, вместо head на работе указывают ревизию  057f9f1c534c из файла миграций
 
+
+# Не забываем импортировать в env.py
 # Таблица/модель БД
 class HotelsOrm(Base):
     # название таблицы

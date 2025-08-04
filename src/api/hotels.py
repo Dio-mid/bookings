@@ -1,65 +1,78 @@
 from fastapi import Query, APIRouter, Body
+
+from src.database import async_session_maker, engine
+from sqlalchemy import insert, select
+
+from src.models.hotels import HotelsOrm
 from src.schemes.hotels import Hotel, HotelPatch
 from src.api.dependencies import PaginationDep
 
-router = APIRouter(prefix="/hotels", tags=["Отели"])
-
-hotels = [
-    {"id": 1, "title": "Sochi", "name": "sochi"},
-    {"id": 2, "title": "Дубай", "name": "dubai"},
-    {"id": 3, "title": "Мальдивы", "name": "maldivi"},
-    {"id": 4, "title": "Геленджик", "name": "gelendzhik"},
-    {"id": 5, "title": "Москва", "name": "moscow"},
-    {"id": 6, "title": "Казань", "name": "kazan"},
-    {"id": 7, "title": "Санкт-Петербург", "name": "spb"},
-]
+router = APIRouter(prefix="/hotels", tags=["Отели"]) # для main.py
 
 
 @router.get("")
-def get_hotels(
+async def get_hotels(
         pagination: PaginationDep,
-        id: int | None = Query(None, description="Айдишник"),
+        location: str | None = Query(None, description="Локация"),
         title: str | None = Query(None, description="Название отеля")
 ):
-    hotels_ = []
-    for hotel in hotels:
-        if id and hotel["id"] != id:
-            continue
-        if title and hotel["title"] != title:
-            continue
-        hotels_.append(hotel)
+    # per_page = pagination.per_page or 5 Если нет дефолтного значения
+    async with async_session_maker() as session:
+        # Запрос на выборку данных - query, запросы на изменение - stmt
+        query = select(HotelsOrm)
+        # Фильтрация
+        if location:
+            query = query.filter_by(location=location)
+        if title:
+            query = query.filter_by(title=title)
 
-    start_index = (pagination.page - 1) * pagination.per_page
-    end_index = start_index + pagination.per_page
-    paginated_hotels = hotels_[start_index:end_index]
-    return paginated_hotels
-    # return hotels_[per_page * (page-1):][:per_page]
+        query = (
+            query
+            .limit(pagination.per_page)
+            .offset(pagination.per_page * (pagination.page-1)) # limit и offset это SQL слова для пагинации
+        )
+
+        result = await session.execute(query) # Все что с await - это отправка запросов в БД, возвращает в result итератор
+
+        hotels = result.scalars().all() # hotels - список, без scalars в списке будут кортежи в консоли
+        # commit() Не нужен так как select запрос, мы ничего не меняем
+        return hotels
+
+        # return hotels_[pagination.per_page * (pagination.page-1):][:pagination.per_page]
 
 
 @router.post("")
-def create_hotel(hotel_data: Hotel = Body(openapi_examples={ #Body(embed=True) для передачи именно JSON и для только одного параметра
+async def create_hotel(hotel_data: Hotel = Body(openapi_examples={ #Body(embed=True) для передачи именно JSON и для только одного параметра
     "1":{
         "summary": "Сочи",
         "value": {
-            "title": "Отель Сочи 5 звезд у моря",
-            "name": "sochi_u_morya",
+            "title": "Отель Deluxe 5 звезд у моря",
+            "location": "Сочи, улица Моря, 1",
         }
     },
     "2": {
         "summary": "Дубай",
         "value": {
-            "title": "Отель Дубай У фонтана",
-            "name": "dubai_fountain",
+            "title": "Отель Luxe У фонтана",
+            "location": "Дубай, улица Шейха, 2",
         }
     }
 })
 ):
-    global hotels
-    hotels.append({
-        "id": hotels[-1]["id"] + 1,
-        "title": hotel_data.title,
-        "name": hotel_data.name,
-    })
+    async with async_session_maker() as session: # Как только он закроется, сессия (какое-то подключение к БД) тоже закроется
+        # Этот АсинКонМен нужен, чтобы заблокировать/захватить одно из соединений Алхимии
+
+        # Делаем запрос на вставку в таблицу, через model_dump преобразуем pydentic схему к словарю и распаковываем **
+        add_hotel_stmt = insert(HotelsOrm).values(**hotel_data.model_dump()) # stmt для всего кроме get api
+
+        # Для дебага, чтобы видеть, что запрос компилируется в то, во что ожидали
+        print(add_hotel_stmt.compile(engine, compile_kwargs={"literal_binds": True}))
+        # Увидим в консоли, какой SQL-запрос отправит Алхимия в БД
+
+        await session.execute(add_hotel_stmt) # Отправляем запрос в БД, Алхимия его переводит на чистый/сырой SQL
+        await session.commit() # Обязательна эта строка, чтоб добавлялось в БД, т.к. в DBeaver и других под капотом
+        # отправляется запрос с start transaction - запрос - commit
+
     return {"status": "OK"} # Принято в RestAPI возвращать JSON формат, а не строку
 
 

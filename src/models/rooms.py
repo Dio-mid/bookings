@@ -3,6 +3,8 @@ from src.database import Base
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import ForeignKey
 
+
+# Не забываем импортировать в env.py
 # Rooms - сущности завязанные на Hotels
 class RoomsOrm(Base):
     __tablename__ = "rooms"
