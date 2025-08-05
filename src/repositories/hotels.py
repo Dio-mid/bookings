@@ -28,10 +28,3 @@ class HotelsRepository(BaseRepository):
         result = await self.session.execute(query)
 
         return result.scalars().all()
-
-
-    async def add_values(self, **kwargs):
-            add_stmt = insert(HotelsOrm).values(**kwargs.model_dump())
-            print(add_stmt.compile(engine, compile_kwargs={"literal_binds": True}))
-            hotel = await self.session.execute(add_stmt)
-            return {"status": "OK", "data": hotel}

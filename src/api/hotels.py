@@ -72,38 +72,43 @@ async def create_hotel(hotel_data: Hotel = Body(openapi_examples={ #Body(embed=T
     }
 })
 ):
-    async with async_session_maker() as session: # Как только он закроется, сессия (какое-то подключение к БД) тоже закроется
-        # Этот АсинКонМен нужен, чтобы заблокировать/захватить одно из соединений Алхимии
+    async with async_session_maker() as session:
+        hotel = await HotelsRepository(session).add(hotel_data)
+        await session.commit() # нужно указывать здесь, а не в репозитории, чтобы находиться внутри одной транзакции на один пользовательский запрос
+        # Комиты нужно делать в самом конце, когда со всеми данными были произведены изменения
+        return {"status": "OK", "data": hotel}
 
-        # Делаем запрос на вставку в таблицу, через model_dump преобразуем pydentic схему к словарю и распаковываем **
-        add_hotel_stmt = insert(HotelsOrm).values(**hotel_data.model_dump())
-
-        # Для дебага, увидим в консоли, какой SQL-запрос отправит Алхимия в БД
-        print(add_hotel_stmt.compile(engine, compile_kwargs={"literal_binds": True}))
-
-        await session.execute(add_hotel_stmt) # Отправляем запрос в БД, Алхимия его переводит на чистый/сырой SQL
-        await session.commit() # Обязательна эта строка, чтоб добавлялось в БД, т.к. в DBeaver и других под капотом
-        # отправляется запрос с start transaction - запрос - commit
-
-    return {"status": "OK"} # Принято в RestAPI возвращать JSON формат, а не строку
+    # async with async_session_maker() as session: # Как только он закроется, сессия (какое-то подключение к БД) тоже закроется
+    #     # Этот АсинКонМен нужен, чтобы заблокировать/захватить одно из соединений Алхимии
+    #
+    #     # Делаем запрос на вставку в таблицу, через model_dump преобразуем pydentic схему к словарю и распаковываем **
+    #     add_hotel_stmt = insert(HotelsOrm).values(**hotel_data.model_dump())
+    #
+    #     # Для дебага, увидим в консоли, какой SQL-запрос отправит Алхимия в БД
+    #     print(add_hotel_stmt.compile(engine, compile_kwargs={"literal_binds": True}))
+    #
+    #     await session.execute(add_hotel_stmt) # Отправляем запрос в БД, Алхимия его переводит на чистый/сырой SQL
+    #     await session.commit() # Обязательна эта строка, чтоб добавлялось в БД, т.к. в DBeaver и других под капотом
+    #     # отправляется запрос с start transaction - запрос - commit
+    #
+    # return {"status": "OK"} # Принято в RestAPI возвращать JSON формат, а не строку
 
 
 @router.delete("/{hotel_id}")
-def delete_hotel(hotel_id: int):
-    global hotels
-    hotels = [hotel for hotel in hotels if hotel["id"] != hotel_id]
-    return {"status": "OK"}
+async def delete_hotel(hotel_id: int):
+    async with async_session_maker() as session:
+        hotel = await HotelsRepository(session).delete(hotel_id)
+        await session.commit()
+        return {"status": "OK"}
 
 
 @router.put("/{hotel_id}")
-def put_hotels(hotel_id: int, hotel_data: Hotel):
-    global hotels
-    for hotel in hotels:
-        if hotel["id"] == hotel_id:
-            hotel["title"] = hotel_data.title
-            hotel["name"] = hotel_data.name
+async def put_hotels(hotel_id: int, hotel_data: Hotel):
+    async with async_session_maker() as session:
+        hotel = await HotelsRepository(session).edit(hotel_id)
+        await session.commit()
+        return {"status": "OK"}
 
-    return {"status": "OK"}
 
 
 @router.patch("/{hotel_id}",
