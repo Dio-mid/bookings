@@ -1,9 +1,7 @@
 from fastapi import Query, APIRouter, Body
 
-from src.database import async_session_maker, engine
-from sqlalchemy import insert, select, func
+from src.database import async_session_maker
 
-from src.models.hotels import HotelsOrm
 from src.repositories.hotels import HotelsRepository
 from src.schemes.hotels import Hotel, HotelPatch
 from src.api.dependencies import PaginationDep
@@ -54,6 +52,12 @@ async def get_hotels(
     #     # return hotels_[pagination.per_page * (pagination.page-1):][:pagination.per_page]
 
 
+@router.get("/{hotel_id}")
+async def get_one_hotel(hotel_id: int):
+    async with async_session_maker() as session:
+        return await HotelsRepository(session).get_one_or_none(id=hotel_id)
+
+
 @router.post("")
 async def create_hotel(hotel_data: Hotel = Body(openapi_examples={ #Body(embed=True) для передачи именно JSON и для только одного параметра
     "1":{
@@ -76,7 +80,7 @@ async def create_hotel(hotel_data: Hotel = Body(openapi_examples={ #Body(embed=T
         hotel = await HotelsRepository(session).add(hotel_data)
         await session.commit() # нужно указывать здесь, а не в репозитории, чтобы находиться внутри одной транзакции на один пользовательский запрос
         # Комиты нужно делать в самом конце, когда со всеми данными были произведены изменения
-        return {"status": "OK", "data": hotel}
+    return {"status": "OK", "data": hotel}
 
     # async with async_session_maker() as session: # Как только он закроется, сессия (какое-то подключение к БД) тоже закроется
     #     # Этот АсинКонМен нужен, чтобы заблокировать/захватить одно из соединений Алхимии
@@ -97,30 +101,26 @@ async def create_hotel(hotel_data: Hotel = Body(openapi_examples={ #Body(embed=T
 @router.delete("/{hotel_id}")
 async def delete_hotel(hotel_id: int):
     async with async_session_maker() as session:
-        hotel = await HotelsRepository(session).delete(hotel_id)
+        await HotelsRepository(session).delete(id=hotel_id)
         await session.commit()
-        return {"status": "OK"}
+    return {"status": "OK"}
 
 
 @router.put("/{hotel_id}")
 async def put_hotels(hotel_id: int, hotel_data: Hotel):
     async with async_session_maker() as session:
-        hotel = await HotelsRepository(session).edit(hotel_id)
+        await HotelsRepository(session).edit(hotel_data, id=hotel_id)
         await session.commit()
-        return {"status": "OK"}
+    return {"status": "OK"}
 
 
 
 @router.patch("/{hotel_id}",
            summary="Частичное обновление данных",
-           description="<h1>Тут мы частично обновляем данные об отеле: можно title и/или name</h1>")
-def patch_hotel(hotel_id: int,
+           description="<h1>Тут мы частично обновляем данные об отеле: можно title и/или location</h1>")
+async def patch_hotel(hotel_id: int,
                hotel_data: HotelPatch):
-    global hotels
-    for hotel in hotels:
-        if hotel["id"] == hotel_id and hotel_data.title:
-            hotel["title"] = hotel_data.title
-        if hotel["id"] == hotel_id and hotel_data.name:
-            hotel["name"] = hotel_data.name
-
+    async with async_session_maker() as session:
+        await HotelsRepository(session).edit(hotel_data, exclude_unset=True, id=hotel_id)
+        await session.commit()
     return {"status": "OK"}

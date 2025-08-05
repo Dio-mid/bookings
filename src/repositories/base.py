@@ -3,7 +3,7 @@
 # Мы работаем с ними как будто они уже есть у нас в приложении, а не мы идем в какую-то БД
 # Крайне удобно работать с данными через репозиторий
 from pydantic import BaseModel
-from sqlalchemy import select, insert, delete
+from sqlalchemy import select, insert, delete, update
 
 
 class BaseRepository:
@@ -28,8 +28,11 @@ class BaseRepository:
         result = await self.session.execute(add_stmt)
         return result.scalars().one()
 
-    async def edit(self, data: BaseModel, **filter_by):
-        pass
+    async def edit(self, data: BaseModel,exclude_unset: bool = False, **filter_by):
+        edit_stmt = update(self.model).filter_by(**filter_by).values(**data.model_dump(exclude_unset=exclude_unset))
+        # exclude_unset дает возможность исключать поля, которые не были переданы клиентом (для patch ручки)
+        await self.session.execute(edit_stmt)
 
     async def delete(self, **filter_by):
-        pass
+        delete_stmt = delete(self.model).filter_by(**filter_by)
+        await self.session.execute(delete_stmt)
