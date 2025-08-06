@@ -15,8 +15,11 @@ from alembic import context
 
 from src.config import settings
 from src.database import Base
+
 from src.models.hotels import HotelsOrm
 from src.models.rooms import RoomsOrm
+from src.models.users import UsersOrm
+
 # В этом файле нигде не используется, но необходимо его импортировать, чтобы произошло наследование
 # чтобы в классе Base добавилась в metadata информация про таблицу
 # Всегда сюда нужно импортировать и сами модели
