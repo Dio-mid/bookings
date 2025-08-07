@@ -13,8 +13,11 @@ class Settings(BaseSettings):
     def DB_URL(self):
         return f"postgresql+asyncpg://{self.DB_USER}:{self.DB_PASS}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
 
-    model_config = SettingsConfigDict(env_file=".env") # extra="ignore" не выдаст ошибку если количество переменных в .env не совпадает с атрибутами Settings
+    JWT_SECRET_KEY: str
+    JWT_ALGORITHM: str
+    ACCESS_TOKEN_EXPIRE_MINUTES: int
 
+    model_config = SettingsConfigDict(env_file=".env") # extra="ignore" не выдаст ошибку если количество переменных в .env не совпадает с атрибутами Settings
 
 settings = Settings()
 
@@ -22,7 +25,6 @@ settings = Settings()
 #
 # (. перед началом файла означает, что файл скрытый и по умолчанию его не видно в обычном проводнике
 # (нужна либо комбинация клавиш, либо вызывать контекстное меню))
-# Эти файлы никогда не пушаться в github/lab (нужно передать в gitignore)
+# Эти файлы никогда не пушатся в github/lab (нужно передать в gitignore)
 #
 # Здесь находятся любые чувствительные данные (пароли, логины, хосты, порты, api-ключи и т.д.)
-# Не делимся ими вообще ни с кем (кроме нашего девопса)
