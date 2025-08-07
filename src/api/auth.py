@@ -1,5 +1,6 @@
-from fastapi import APIRouter, HTTPException, Response, Request
+from fastapi import APIRouter, HTTPException, Response
 
+from src.api.dependencies import UserIdDep
 from src.database import async_session_maker
 from src.repositories.users import UsersRepository
 from src.schemes.users import UserApiAdd, UserAdd
@@ -35,9 +36,17 @@ async def login_user(
         response.set_cookie("access_token", access_token) # Добавляет JWT в cookie
         return {"access_token": access_token}
 
-@router.get("/only_auth")
-async def only_auth(request: Request):
-    access_token = request.cookies
-    if access_token is None:
-        return None
-    return access_token
+@router.get("/auth_user")
+async def auth_user(
+        user_id: UserIdDep
+):
+    async with async_session_maker() as session:
+        user = await UsersRepository(session).get_one_or_none(id=user_id)
+        return user
+
+@router.delete("/logout")
+async def logout(
+        response: Response
+):
+    async with async_session_maker() as session:
+        response.delete_cookie("delete_token", "/login")
