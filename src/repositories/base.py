@@ -19,12 +19,16 @@ class BaseRepository:
     def __init__(self, session): # Открываем только одну сессию, чтобы Алхимия не занимала соединения к БД при вызове разных запросов
         self.session = session
 
-    async def get_all(self, *args, **kwargs):
-        query = select(self.model)
+
+    async def get_filtered(self, **filter_by):
+        query = select(self.model).filter_by(**filter_by)
         result = await self.session.execute(query)
         # return result.scalars().all() # Возвращает объект БД
         return [self.schema.model_validate(model, from_attributes=True) for model in result.scalars().all()] # Возвращает pydentic схему
         # Pydentic умеет работать не только со своими сущностями и словарями, он может доставать атрибуты из ЭкзКлас - from_attributes=True
+
+    async def get_all(self, *args, **kwargs):
+        return await self.get_filtered()
 
     async def get_one_or_none(self, **filter_by):
         query = select(self.model).filter_by(**filter_by)

@@ -19,6 +19,7 @@ from src.database import Base
 from src.models.hotels import HotelsOrm
 from src.models.rooms import RoomsOrm
 from src.models.users import UsersOrm
+from src.models.bookings import BookingsOrm
 
 # В этом файле нигде не используются, но необходимо их импортировать, чтобы произошло наследование
 # чтобы в классе Base добавилась в metadata информация про таблицу
