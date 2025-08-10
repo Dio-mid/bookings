@@ -1,9 +1,6 @@
 from fastapi import APIRouter, Body
 
 from src.api.dependencies import DBDep
-from src.database import async_session_maker
-
-from src.repositories.rooms import RoomsRepository
 from src.schemes.rooms import RoomAdd, RoomAddRequest, RoomPatchRequest, RoomPatch
 
 router = APIRouter(prefix="/hotels", tags=["Номера"])
@@ -11,12 +8,12 @@ router = APIRouter(prefix="/hotels", tags=["Номера"])
 
 @router.get("/{hotel_id}/rooms")
 async def get_rooms(hotel_id: int, db: DBDep):
-    return db.rooms.get_filtered(hotel_id=hotel_id)
+    return await db.rooms.get_filtered(hotel_id=hotel_id)
 
 
 @router.get("/{hotel_id}/rooms/{room_id}")
 async def get_room(hotel_id: int, room_id: int, db: DBDep):
-    return db.rooms.get_one_or_none(id=room_id, hotel_id=hotel_id)
+    return await db.rooms.get_one_or_none(id=room_id, hotel_id=hotel_id)
 
 
 @router.post("/{hotel_id}/rooms")
