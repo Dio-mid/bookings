@@ -5,14 +5,15 @@ from src.schemes.bookings import BookingAddRequest, BookingAdd
 
 router = APIRouter(prefix="/bookings", tags=["Бронирование"])
 
+
 @router.get("")
 async def get_bookings(db: DBDep):
     return await db.bookings.get_all()
 
 
 @router.get("/me")
-async def get_bookings(user_id: UserIdDep, db: DBDep):
-    return await db.bookings.get_one_or_none(id=user_id)
+async def get_my_bookings(user_id: UserIdDep, db: DBDep):
+    return await db.bookings.get_filtered(user_id=user_id)
 
 
 @router.post("")
