@@ -11,10 +11,12 @@
 from pydantic import BaseModel
 from sqlalchemy import select, insert, delete, update
 
+from src.repositories.mappers.base import DataMapper
+
 
 class BaseRepository:
     model = None # Каждый репозиторий, который будет наследоваться от BaseRepository, будет иметь свою модель
-    schema: BaseModel = None
+    mapper: DataMapper = None
 
     def __init__(self, session): # Открываем только одну сессию, чтобы Алхимия не занимала соединения к БД при вызове разных запросов
         self.session = session
@@ -28,8 +30,9 @@ class BaseRepository:
         )
         result = await self.session.execute(query)
         # return result.scalars().all() # Возвращает объект БД
-        return [self.schema.model_validate(model, from_attributes=True) for model in result.scalars().all()] # Возвращает pydentic схему
+        # return [self.schema.model_validate(model, from_attributes=True) for model in result.scalars().all()] # Возвращает pydentic схему
         # Pydentic умеет работать не только со своими сущностями и словарями, он может доставать атрибуты из ЭкзКлас - from_attributes=True
+        return [self.mapper.map_to_domain_entity(model) for model in result.scalars().all()]
 
     async def get_all(self, *args, **kwargs):
         return await self.get_filtered()
@@ -41,7 +44,7 @@ class BaseRepository:
         model = result.scalars().one_or_none()
         if model is None:
             return None
-        return self.schema.model_validate(model, from_attributes=True)
+        return self.mapper.map_to_domain_entity(model)
 
     async def add(self, data: BaseModel):
         add_stmt = insert(self.model).values(**data.model_dump()).returning(self.model)
@@ -49,7 +52,11 @@ class BaseRepository:
         result = await self.session.execute(add_stmt)
         # return result.scalars().one()
         model = result.scalars().one()
-        return self.schema.model_validate(model, from_attributes=True)
+        return self.mapper.map_to_domain_entity(model)
+
+    async def add_bulk(self, data: list[BaseModel]): # Для добавления массивов
+        add_data_stmt = insert(self.model).values([item.model_dump() for item in data])
+        await self.session.execute(add_data_stmt)
 
     async def edit(self, data: BaseModel,exclude_unset: bool = False, **filter_by):
         edit_stmt = update(self.model).filter_by(**filter_by).values(**data.model_dump(exclude_unset=exclude_unset))

@@ -1,7 +1,8 @@
 from src.database import Base
 
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import ForeignKey
+
 
 
 # Не забываем импортировать в env.py
@@ -18,3 +19,8 @@ class RoomsOrm(Base):
     description: Mapped[str | None]
     price: Mapped[int]
     quantity: Mapped[int]
+
+    facilities: Mapped[list["FacilitiesOrm"]] = relationship( # relationship связь
+        back_populates="rooms", # Чтобы Алхимия понимала между чем устанавливается связь, нужно указать название атрибута в другом классе
+        secondary="rooms_facilities" # название таблицы
+    )

@@ -1,4 +1,4 @@
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import String, ForeignKey
 
 from src.database import Base
@@ -9,6 +9,11 @@ class FacilitiesOrm(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     title: Mapped[str] = mapped_column(String(100))
+
+    rooms: Mapped[list["RoomsOrm"]] = relationship(  # relationship связь
+        back_populates="facilities", # Чтобы Алхимия понимала между чем устанавливается связь, нужно указать название атрибута в другом классе
+        secondary="rooms_facilities"  # название таблицы
+    )
 
 
 # m2m таблица

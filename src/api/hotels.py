@@ -1,15 +1,18 @@
 from datetime import date
 
 from fastapi import Query, APIRouter, Body
-
+from fastapi_cache.decorator import cache
 
 from src.schemes.hotels import HotelPatch, HotelAdd
 from src.api.dependencies import PaginationDep, DBDep
 
 router = APIRouter(prefix="/hotels", tags=["Отели"]) # для main.py
 
+# Паттерн Use Case (в DDD) - это часть бизнес-логики приложения, которая определяет конкретный сценарий использования (для реализации коротких ручек)
+
 
 @router.get("")
+@cache(expire=20)
 async def get_hotels(
         pagination: PaginationDep,
         db: DBDep,
@@ -96,7 +99,7 @@ async def create_hotel(
     }
 })
 ):
-    hotel = db.hotels.add(hotel_data)
+    hotel = await db.hotels.add(hotel_data)
     await db.commit()
 
     return {"status": "OK", "data": hotel}

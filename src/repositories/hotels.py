@@ -6,13 +6,14 @@ from src.repositories.base import BaseRepository
 from src.models.hotels import HotelsOrm
 from sqlalchemy import select, func
 
+from src.repositories.mappers.mappers import HotelDataMapper
 from src.repositories.utils import rooms_ids_for_booking
 from src.schemes.hotels import Hotel
 
 
 class HotelsRepository(BaseRepository):
     model = HotelsOrm
-    schema = Hotel
+    mapper = HotelDataMapper
 
     # async def get_all(
     #         self,
@@ -67,4 +68,7 @@ class HotelsRepository(BaseRepository):
         )
         print(query.compile(engine, compile_kwargs={"literal_binds": True}))
         result = await self.session.execute(query)
-        return [Hotel.model_validate(hotel, from_attributes=True) for hotel in result.scalars().all()]
+        # Когда была schema указана в атрибутах
+        # return [Hotel.model_validate(hotel, from_attributes=True) for hotel in result.scalars().all()]
+        return [self.mapper.map_to_domain_entity(hotel) for hotel in result.scalars().all()]
+
