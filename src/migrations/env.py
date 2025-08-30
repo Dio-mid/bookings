@@ -16,11 +16,7 @@ from alembic import context
 from src.config import settings
 from src.database import Base
 
-from src.models.hotels import HotelsOrm
-from src.models.rooms import RoomsOrm
-from src.models.users import UsersOrm
-from src.models.bookings import BookingsOrm
-from src.models.facilities import FacilitiesOrm # Нужно импортировать сам файл, чтобы alembic увидел, не нужно импорт две модели
+from src.models import * # __init__.py из models
 
 # В этом файле нигде не используются, но необходимо их импортировать, чтобы произошло наследование
 # чтобы в классе Base добавилась в metadata информация про таблицу
