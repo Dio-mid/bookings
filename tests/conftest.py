@@ -1,4 +1,10 @@
 import json
+from unittest import mock
+
+# Мок - заменяет на время теста запрос во внешний сервис (Redis, RabbitMQ и тд) на пустышку
+mock.patch("fastapi_cache.decorator.cache", lambda *args, **kwargs: lambda f: f).start() # Мокает запрос к Redis
+# Первым параметром указываем, что меняем (декоратор @cache), а вторым, на что (пустой декоратор в виде лямбды)
+
 
 import pytest
 from fastapi_cache import FastAPICache
@@ -20,10 +26,10 @@ def check_test_mode():
     assert settings.MODE == "TEST"
 
 
-# Это позволит тестам работать без Redis
-@pytest.fixture(autouse=True, scope="session")
-def init_cache():
-    FastAPICache.init(InMemoryBackend(), prefix="test-cache")
+# # Для локальной разработки, это позволит тестам работать без Redis
+# @pytest.fixture(autouse=True, scope="session")
+# def init_cache():
+#     FastAPICache.init(InMemoryBackend(), prefix="test-cache")
 
 
 async def get_db_null_pool():
@@ -77,3 +83,15 @@ async def register_user(setup_database, ac):
             "password": "1234"
         }
     )
+
+@pytest.fixture(scope="session")
+async def authenticated_ac(register_user, ac):
+    await ac.post(
+        "/auth/login",
+        json={
+            "email": "kot@pes.com",
+            "password": "1234"
+        }
+    )
+    assert ac.cookies["access_token"]
+    yield ac

@@ -12,6 +12,13 @@ router = APIRouter(prefix="/auth", tags=["Авторизация и аутент
 
 @router.post("/register")
 async def register_user(user_data: UserApiAdd, db: DBDep):
+    existing_user = await db.users.get_one_or_none(email=user_data.email)
+    if existing_user:
+        raise HTTPException(
+            status_code=409,
+            detail="Пользователь с таким email уже зарегистрирован"
+        )
+
     hashed_password = AuthService().hash_password(user_data.password)
     new_user_data = UserAdd(email=user_data.email, hashed_password=hashed_password)
     await db.users.add(new_user_data)
