@@ -1,14 +1,16 @@
+# ruff: noqa: E402
 import json
 from unittest import mock
 
 # Мок - заменяет на время теста запрос во внешний сервис (Redis, RabbitMQ и тд) на пустышку
-mock.patch("fastapi_cache.decorator.cache", lambda *args, **kwargs: lambda f: f).start() # Мокает запрос к Redis
+mock.patch(
+    "fastapi_cache.decorator.cache", lambda *args, **kwargs: lambda f: f
+).start()  # Мокает запрос к Redis
 # Первым параметром указываем, что меняем (декоратор @cache), а вторым, на что (пустой декоратор в виде лямбды)
+mock.patch("src.tasks.tasks.test_task.delay", lambda *args, **kwargs: None).start() # Мокает celery задачу в add_facilities
 
 
 import pytest
-from fastapi_cache import FastAPICache
-from fastapi_cache.backends.inmemory import InMemoryBackend
 from httpx import AsyncClient, ASGITransport
 
 from src.api.dependencies import get_db
@@ -18,7 +20,7 @@ from src.main import app
 from src.schemes.hotels import HotelAdd
 from src.schemes.rooms import RoomAdd
 from src.utils.db_manager import DBManager
-from src.models import *
+from src.models import *  # noqa для ruff
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -42,13 +44,15 @@ async def db() -> DBManager:
     async for db in get_db_null_pool():
         yield db
 
+
 # Перезаписывание зависимости
-app.dependency_overrides[get_db] = get_db_null_pool # Везде, где используется get_db, т.е. где в апишке идет подключение к БД, будет использоваться null_pool
+app.dependency_overrides[get_db] = (
+    get_db_null_pool  # Везде, где используется get_db, т.е. где в апишке идет подключение к БД, будет использоваться null_pool
+)
 
 
 @pytest.fixture(scope="session", autouse=True)
 async def setup_database(check_test_mode):
-
     # Для создания тестовой БД на основе тех БД, что уже есть
     async with engine_null_pool.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
@@ -74,24 +78,14 @@ async def ac() -> AsyncClient:
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
 
+
 @pytest.fixture(scope="session", autouse=True)
 async def register_user(setup_database, ac):
-    await ac.post(
-        "/auth/register",
-        json={
-            "email": "kot@pes.com",
-            "password": "1234"
-        }
-    )
+    await ac.post("/auth/register", json={"email": "kot@pes.com", "password": "1234"})
+
 
 @pytest.fixture(scope="session")
 async def authenticated_ac(register_user, ac):
-    await ac.post(
-        "/auth/login",
-        json={
-            "email": "kot@pes.com",
-            "password": "1234"
-        }
-    )
+    await ac.post("/auth/login", json={"email": "kot@pes.com", "password": "1234"})
     assert ac.cookies["access_token"]
     yield ac

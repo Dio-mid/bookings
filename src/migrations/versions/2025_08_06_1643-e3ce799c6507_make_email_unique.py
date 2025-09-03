@@ -9,7 +9,6 @@ Create Date: 2025-08-06 16:43:52.787086
 from typing import Sequence, Union
 
 from alembic import op
-import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
@@ -21,7 +20,6 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     op.create_unique_constraint(None, "users", ["email"])
-
 
 
 def downgrade() -> None:

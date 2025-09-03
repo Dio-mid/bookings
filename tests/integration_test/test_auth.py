@@ -1,6 +1,7 @@
 from src.services.auth import AuthService
 
-#pytest -v
+
+# pytest -v
 def test_create_and_decode_access_token():
     data = {"user_id": 1}
     jwt_token = AuthService().create_access_token(data)

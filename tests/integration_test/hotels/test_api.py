@@ -5,7 +5,7 @@ async def test_get_hotels(ac):
         params={
             "data_from": "2025-08-01",
             "date_to": "2025-08-10",
-        }
+        },
     )
     print(f"{response.json()=}")
 

@@ -1,35 +1,27 @@
 from fastapi import APIRouter
 
 from src.api.dependencies import DBDep, UserIdDep
-from src.schemes.bookings import BookingAddRequest, BookingAdd
+from src.exceptions import AllRoomsAreBookedException, AllRoomsAreBookedHTTPException
+from src.schemes.bookings import BookingAddRequest
+from src.services.bookings import BookingService
 
 router = APIRouter(prefix="/bookings", tags=["Бронирование"])
 
 
 @router.get("")
 async def get_bookings(db: DBDep):
-    return await db.bookings.get_all()
+    return await BookingService(db).get_bookings()
 
 
 @router.get("/me")
 async def get_my_bookings(user_id: UserIdDep, db: DBDep):
-    return await db.bookings.get_filtered(user_id=user_id)
+    return await BookingService(db).get_my_bookings(user_id)
 
 
 @router.post("")
-async def add_booking(
-        user_id: UserIdDep,
-        db: DBDep,
-        booking_data: BookingAddRequest
-):
-    room = await db.rooms.get_one_or_none(id=booking_data.room_id)
-    hotel = await db.hotels.get_one_or_none(id=room.hotel_id)
-    room_price: int = room.price
-    _booking_data = BookingAdd(
-        user_id=user_id,
-        price=room_price,
-        **booking_data.model_dump(),
-    )
-    booking = await db.bookings.add_booking(_booking_data, hotel_id=hotel.id)
-    await db.commit()
+async def add_booking(user_id: UserIdDep, db: DBDep, booking_data: BookingAddRequest):
+    try:
+        booking = await BookingService(db).add_booking(user_id, booking_data)
+    except AllRoomsAreBookedException:
+        raise AllRoomsAreBookedHTTPException
     return {"status": "OK", "data": booking}

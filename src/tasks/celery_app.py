@@ -36,6 +36,6 @@ celery_instance = Celery(
 celery_instance.conf.beat_schedule = {
     "luboe-nazvanie": {
         "task": "booking_today_checkin",
-        "schedule": 5, #crontab()
+        "schedule": 5,  # crontab()
     }
 }

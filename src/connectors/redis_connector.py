@@ -1,3 +1,4 @@
+import logging
 import redis.asyncio as redis
 
 
@@ -8,7 +9,9 @@ class RedisManager:
         self.redis = None
 
     async def connect(self):
+        logging.info(f"Начинаю подключение к Redis host={self.host}, port={self.port}") # пароли, ip адреса, api-ключи не логать!
         self.redis = await redis.Redis(host=self.host, port=self.port)
+        logging.info(f"Успешное подключение к Redis host={self.host}, port={self.port}")
 
     async def set(self, key: str, value: str, expire: int = None):
         if expire:
@@ -26,6 +29,7 @@ class RedisManager:
     async def close(self):
         if self.redis:
             await self.redis.close()
+
 
 # Пример использования:
 # redis_manager = RedisManager(redis_url="redis://localhost")

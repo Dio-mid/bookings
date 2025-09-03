@@ -1,17 +1,21 @@
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
-import uvicorn
-
-
+import logging
 import sys
 from pathlib import Path
 
+from fastapi import FastAPI
 from fastapi_cache import FastAPICache
 from fastapi_cache.backends.redis import RedisBackend
 
-sys.path.append(str(Path(__file__).parent.parent)) # Позволяет определить путь текущего файла через Path(__file__)
+import uvicorn
+
+sys.path.append(
+    str(Path(__file__).parent.parent)
+)  # Позволяет определить путь текущего файла через Path(__file__)
 # определить его родителя через .parent (src) и его родителя .parent (backend_proj) и добавить ее в пути, с которыми может работать интерпретатор
+
+logging.basicConfig(level=logging.DEBUG) # задаёт минимальный уровень сообщений, которые будут выводиться.
 
 # Теперь интерпретатор понимает что за src, можно запускать python src/main.py, services.msc для включения БД через командную строку
 from src.api.hotels import router as router_hotels
@@ -28,9 +32,10 @@ async def lifespan(app: FastAPI):
     # При старте приложения
     await redis_manager.connect()
     FastAPICache.init(RedisBackend(redis_manager.redis), prefix="fastapi-cache")
+    logging.info("FastAPI cache initialized")
     yield
-    await redis_manager.close()
     # При выключении/перезагрузке приложения
+    await redis_manager.close()
 
 
 app = FastAPI(lifespan=lifespan)

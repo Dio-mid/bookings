@@ -1,6 +1,7 @@
 from src.services.auth import AuthService
 
-#pytest -v, pip install pytest-dotenv для тестовой среды
+
+# pytest -v, pip install pytest-dotenv для тестовой среды
 def test_create_access_token():
     data = {"user": 1}
     jwt_token = AuthService().create_access_token(data)

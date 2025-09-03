@@ -23,7 +23,7 @@ class DBManager:
         self.facilities = FacilitiesRepository(self.session)
         self.rooms_facilities = RoomsFacilitiesRepository(self.session)
 
-        return self # as session:
+        return self  # as session:
 
     async def __aexit__(self, *args):
         # КонтМен делает откат изменений в случае возникновения ошибки во время соединения с БД/отправления транзакции, взаимодействия с ней и тд

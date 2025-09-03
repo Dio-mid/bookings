@@ -1,10 +1,11 @@
+# ruff: noqa: E402
 import os
 import sys
 
 # переходим от migrations/env.py к корню проекта
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
 if BASE_DIR not in sys.path:
-    sys.path.insert(0, BASE_DIR) # с 1-7 строчки кода, чтобы находить src
+    sys.path.insert(0, BASE_DIR)  # с 1-7 строчки кода, чтобы находить src
 
 from logging.config import fileConfig
 
@@ -16,7 +17,7 @@ from alembic import context
 from src.config import settings
 from src.database import Base
 
-from src.models import * # __init__.py из models
+from src.models import *  # noqa __init__.py из models
 
 # В этом файле нигде не используются, но необходимо их импортировать, чтобы произошло наследование
 # чтобы в классе Base добавилась в metadata информация про таблицу
@@ -87,9 +88,7 @@ def run_migrations_online() -> None:
     )
 
     with connectable.connect() as connection:
-        context.configure(
-            connection=connection, target_metadata=target_metadata
-        )
+        context.configure(connection=connection, target_metadata=target_metadata)
 
         with context.begin_transaction():
             context.run_migrations()

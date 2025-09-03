@@ -18,6 +18,6 @@ class BookingsOrm(Base):
     date_to: Mapped[date]
     price: Mapped[int]
 
-    @hybrid_property # продвинутый property Алхимии, классная вещь
+    @hybrid_property  # продвинутый property Алхимии, классная вещь
     def total_price(self):
         return self.price * (self.date_to - self.data_from).days

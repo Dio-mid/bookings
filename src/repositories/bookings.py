@@ -2,6 +2,7 @@ from fastapi import HTTPException
 from sqlalchemy import select
 from datetime import date
 
+from src.exceptions import AllRoomsAreBookedException
 from src.repositories.base import BaseRepository
 from src.models.bookings import BookingsOrm
 from src.repositories.mappers.mappers import BookingDataMapper
@@ -10,14 +11,11 @@ from src.schemes.bookings import BookingAdd
 
 
 class BookingsRepository(BaseRepository):
-    model =  BookingsOrm
+    model = BookingsOrm
     mapper = BookingDataMapper
 
     async def get_bookings_today_checkin(self):
-        query = (
-            select(BookingsOrm)
-            .filter(BookingsOrm.data_from == date.today())
-        )
+        query = select(BookingsOrm).filter(BookingsOrm.data_from == date.today())
         res = await self.session.execute(query)
         return [self.mapper.map_to_domain_entity(booking) for booking in res.scalars().all()]
 
@@ -33,5 +31,4 @@ class BookingsRepository(BaseRepository):
         if data.room_id in rooms_ids_to_book:
             new_booking = await self.add(data)
             return new_booking
-        else:
-            raise HTTPException(500)
+        raise AllRoomsAreBookedException

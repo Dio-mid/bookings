@@ -20,6 +20,10 @@ class HotelsOrm(Base):
     __tablename__ = "hotels"
 
     # столбцы
-    id: Mapped[int] = mapped_column(primary_key=True) # Первичный ключ, обозначат, что столбец уникальный
-    title: Mapped[str] = mapped_column(String(length=100)) # mapped_column для определения свойств столбца, если нужно
+    id: Mapped[int] = mapped_column(
+        primary_key=True
+    )  # Первичный ключ, обозначат, что столбец уникальный
+    title: Mapped[str] = mapped_column(
+        String(length=100)
+    )  # mapped_column для определения свойств столбца, если нужно
     location: Mapped[str]
